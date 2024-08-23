@@ -13,19 +13,13 @@ function handle_error() {
 }
 trap handle_error EXIT SIGINT
 
-function add_xenial_repositories() {
-  cat <<-EOT >> /etc/apt/sources.list
-  deb http://archive.ubuntu.com/ubuntu/ xenial main universe
-  deb http://security.ubuntu.com/ubuntu xenial-security main
-EOT
-}
-
-# add source packages repository to sources.list
+# Add 'deb-src' entries to sources.list dynamically
 function add_source_repositories() {
-  echo "deb-src http://archive.ubuntu.com/ubuntu/ xenial main universe" >> /etc/apt/sources.list
-  if [[ $STACK == "heroku-20" ]]; then
-    add_xenial_repositories
-  fi
+  cat <<-EOT >> /etc/apt/sources.list
+  deb-src http://archive.ubuntu.com/ubuntu/ jammy main universe
+  deb-src http://archive.ubuntu.com/ubuntu/ jammy-updates main universe
+  deb-src http://archive.ubuntu.com/ubuntu/ jammy-security main universe
+EOT
 }
 
 add_source_repositories
@@ -33,10 +27,12 @@ add_source_repositories
 echo "⚙️ Getting libraries and dependencies..."
 apt-get update -y
 apt-get install -y build-essential autoconf libtool git-core
-if [[ $STACK == "heroku-20" ]]; then
+
+if [[ $STACK == "heroku-24" ]]; then
   echo "⚙️ Getting additional dependencies for the selected stack..."
-  apt-get install -y libomp5 libomp-10-dev libjasper-dev
+  apt-get install -y libomp5 libomp-dev libopenjp2-7-dev
 fi
+
 apt-get build-dep -y imagemagick libmagickcore-dev
 
 # install the libde265 library
@@ -60,7 +56,7 @@ make && make install
 
 # copy the dependencies into imagemagick lib directory
 cp /usr/local/lib/libde265.so.0 $WORK_DIR/imagemagick/lib
-cp /usr/local/lib/libheif.so.1 $WORK_DIR/imagemagick/lib
+cp /usr/lib/x86_64-linux-gnu/libheif.so.1 $WORK_DIR/imagemagick/lib
 cp /usr/lib/x86_64-linux-gnu/libomp.so.5 $WORK_DIR/imagemagick/lib
 cp /usr/lib/x86_64-linux-gnu/libiomp5.so $WORK_DIR/imagemagick/lib
 
